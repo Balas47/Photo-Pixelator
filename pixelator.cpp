@@ -9,6 +9,7 @@ using namespace cimg_library;
 const int MIN_IN = 3;
 const double FILTER = 9.0;
 
+
 // Simple 3x3 blur filter
 void blurFilter(Eigen::Vector3d *&image, int height, int width){
 
@@ -38,6 +39,7 @@ void blurFilter(Eigen::Vector3d *&image, int height, int width){
                 if(j < (width-1)) pixlavg += avg[(i+1)*width+(j+1)];
             }
 
+            // Save the blurring results
             pixlavg /= FILTER;
             image[i*width+j] = pixlavg;
 
@@ -45,8 +47,36 @@ void blurFilter(Eigen::Vector3d *&image, int height, int width){
     }
 
     delete[] avg;
-
 }
+
+
+// "Pixelate" the image in the form of blocks. The value of the block color is simply
+// the color of one of the pixels in that block. This function should be called after 
+// passing the image through the blur filter. The "blocks" of the image are basically
+// NxN pixels that all have the same color value.
+void pixelate(Eigen::Vector3d *&image, int height, int width, int block){
+
+    Eigen::Vector3d *temp = image;
+    image = new Eigen::Vector3d[height*width];
+
+    for(int i=0;i<height;i+=block){
+        for(int j=0;j<height;j+=block){
+
+            //For all of the pixels in the block
+            for(int y=0;y<block;y++){
+                for(int x=0;x<block;x++){
+
+                    // The pixel is the value of the upper left pixel in the block
+                    if((i+y < height-1) && (j+x < width-1))
+                        image[(i+y)*width+(j+x)] = temp[i*width+j];
+                }
+            }
+        }
+    }
+
+    delete[] temp;
+}
+
 
 int main(int argc, char *argv[]){
 
@@ -74,11 +104,13 @@ int main(int argc, char *argv[]){
 
     // Apply the simple blur filter
     blurFilter(image, input.height(), input.width());
+    pixelate(image, input.height(), input.width(), 3);
 
 #ifdef debug
     // Just for testing, apply the filter 10 times
     for(int i=0;i<10;i++){
         blurFilter(image, input.height(), input.width());
+        pixelate(image, input.height(), input.width(), 3*(i+1));
     }
 #endif
 
@@ -92,7 +124,7 @@ int main(int argc, char *argv[]){
         }
     }
 
-    // Save the image in the appropriate format (just png, jpg for now)
+    // Save the image in the appropriate format (just png, and jpg for now)
     if (strstr(outFile, "png"))
 	    output.save_png(outFile);
     else if (strstr(outFile, "jpg"))
