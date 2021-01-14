@@ -7,7 +7,6 @@
 using namespace cimg_library;
 
 const int MIN_IN = 3;
-const double FILTER = 9.0;
 
 
 // Simple 3x3 blur filter
@@ -20,27 +19,48 @@ void blurFilter(Eigen::Vector3d *&image, int height, int width){
         for(unsigned int j=0;j<width;j++){
 
             Eigen::Vector3d pixlavg = avg[i*width+j];
+            double num = 1.0;
 
             // Get information from the pixles above if possible
             if(i > 0){
                 pixlavg += avg[(i-1)*width+j];
-                if(j > 0) pixlavg += avg[(i-1)*width+(j-1)];
-                if(j < (width-1)) pixlavg += avg[(i-1)*width+(j+1)];
+                num++;
+                if(j > 0){
+                    pixlavg += avg[(i-1)*width+(j-1)];
+                    num++;
+                }
+                if(j < (width-1)){
+                    pixlavg += avg[(i-1)*width+(j+1)];
+                    num++;
+                }
             }
 
             //Get information from the pixels in the current row if possible              
-            if(j > 0) pixlavg += avg[i*width+(j-1)];
-            if(j < (width-1)) pixlavg += avg[i*width+(j+1)];
+            if(j > 0){
+                pixlavg += avg[i*width+(j-1)];
+                num++;
+            }
+            if(j < (width-1)){
+                pixlavg += avg[i*width+(j+1)];
+                num++;
+            }
 
             // Get information from the pixels above if possible
             if(i < (height-1)){
                 pixlavg += avg[(i+1)*width+j];
-                if(j > 0) pixlavg += avg[(i+1)*width+(j-1)];
-                if(j < (width-1)) pixlavg += avg[(i+1)*width+(j+1)];
+                num++;
+                if(j > 0){
+                    pixlavg += avg[(i+1)*width+(j-1)];
+                    num++;
+                }
+                if(j < (width-1)){
+                    pixlavg += avg[(i+1)*width+(j+1)];
+                    num++;
+                }
             }
 
             // Save the blurring results
-            pixlavg /= FILTER;
+            pixlavg /= num;
             image[i*width+j] = pixlavg;
 
         }
@@ -60,7 +80,7 @@ void pixelate(Eigen::Vector3d *&image, int height, int width, int block){
     image = new Eigen::Vector3d[height*width];
 
     for(int i=0;i<height;i+=block){
-        for(int j=0;j<height;j+=block){
+        for(int j=0;j<width;j+=block){
 
             //For all of the pixels in the block
             for(int y=0;y<block;y++){
