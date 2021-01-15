@@ -5,6 +5,7 @@ This is a simple pixelator program that takes in any picture and either applys a
 ## Requirements
 
 - This program is written in C++ and therefore requries a C++ compiler, and the ability to use make files.
+- This program makes use of the Eigen template library, which is not included in this repository. This library must be installed on your machine to be included in C++ programs. For more information about the Eigen library, go here: http://eigen.tuxfamily.org/index.php?title=Main_Page
 - This program makes use of the CImg library, which is not included in this repository. This library must be in the same directory as the code for this project in order to compile properly. For more information about the CImg library, go here: http://cimg.eu/index.html
 - This program, because of the use of the CImg library, also requires that the ImageMagick package be installed on your machine. For more information about ImageMagick, go here: https://imagemagick.org/index.php
 - The makefile assumes a linux environment, if the program is being used on a different machine, the makefile must be modified by commenting the Linux version of the FLAGS variable, and uncommenting the FLAGS for the specified environment. If there is not a version of the FLAGS variable for your specific environment, please refer to the CImg library documentation.
@@ -25,7 +26,7 @@ out.[png/jpg] is the name of the output image. The program only outputs using pn
 
 ### Some things to be aware of
 
-- If the -b flag is not used, the program will pixelate teh image.
+- If the -b flag is not used, the program will pixelate the image.
 - If the -s flag is not used, the program will only do one step. Also, this flag assumes that the number of steps is provided as an integer.
 - Both flags can be used at the same time, but the program requires there to be a space between them, and that the flag be preceded by a "-". For example, 
     "./pixel.out input.png output.jpg -b -s 10"
