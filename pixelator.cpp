@@ -1,13 +1,20 @@
 #define cimg_display 0
-#define debug
 
 #include "CImg.h"
 #include <iostream>
 #include <Eigen/Dense>
 using namespace cimg_library;
 
+// Minimum number of command line arguments needed
 const int MIN_IN = 3;
 
+// Options that could be used with the program
+const char OPTION = '-';
+const char BLUR = 'b';
+const char STEPS = 's';
+
+// Minimum block size
+const int BLOCKMIN = 3;
 
 // Simple 3x3 blur filter
 void blurFilter(Eigen::Vector3d *&image, int height, int width){
@@ -70,9 +77,29 @@ void blurFilter(Eigen::Vector3d *&image, int height, int width){
 }
 
 
+// Find the average color value of the pixels in a block
+Eigen::Vector3d blockAvg(Eigen::Vector3d *image, int height, int width, int y, int x, int block){
+
+    Eigen::Vector3d avg(0.0, 0.0, 0.0);
+    double numPix = 0.0;
+
+    for(int i=0;i<block;i++){
+        for(int j=0;j<block;j++){
+
+            // If possible, add the pixel value to the average
+            if(i+y<height && j+x<width){
+                avg += image[(i+y)*width+(j+x)];
+                numPix++;
+            }
+        }
+    }
+
+    return avg / numPix;
+}
+
+
 // "Pixelate" the image in the form of blocks. The value of the block color is simply
-// the color of one of the pixels in that block. This function should be called after 
-// passing the image through the blur filter. The "blocks" of the image are basically
+// the average value of the pixels in that block. The "blocks" of the image are basically
 // NxN pixels that all have the same color value.
 void pixelate(Eigen::Vector3d *&image, int height, int width, int block){
 
@@ -82,13 +109,16 @@ void pixelate(Eigen::Vector3d *&image, int height, int width, int block){
     for(int i=0;i<height;i+=block){
         for(int j=0;j<width;j+=block){
 
+            Eigen::Vector3d bAvg = blockAvg(temp, height, width, i, j, block);
+
             //For all of the pixels in the block
             for(int y=0;y<block;y++){
                 for(int x=0;x<block;x++){
 
                     // The pixel is the value of the upper left pixel in the block
                     if((i+y < height-1) && (j+x < width-1))
-                        image[(i+y)*width+(j+x)] = temp[i*width+j];
+                        //image[(i+y)*width+(j+x)] = temp[i*width+j];
+                        image[(i+y)*width+(j+x)] = bAvg;
                 }
             }
         }
@@ -101,14 +131,30 @@ void pixelate(Eigen::Vector3d *&image, int height, int width, int block){
 int main(int argc, char *argv[]){
 
     char *inFile, *outFile;
+    bool blur = false;
+    int steps = 1;
 
     // Storing all input into appropriate variables
     if(argc < MIN_IN){
         std::cout << "NOT ENOUGH ARGUMENTS!" << std::endl;
         return 1;
+
     }else{
         inFile = argv[1];
         outFile = argv[2];
+
+        // Get other options where possible
+        if(argc > MIN_IN){
+
+            for(int i=MIN_IN;i<argc;i++){
+                if(argv[i][0] == OPTION && argv[i][1] == BLUR) blur = true;
+                else if(argv[i][0] == OPTION && argv[i][1] == STEPS){
+                    steps = std::atoi(argv[i + 1]); // This is expected
+                    i++;
+                }
+            }
+
+        }
     }
 
     // Read in the base image and store its contents in a vector to manipulate later
@@ -122,17 +168,20 @@ int main(int argc, char *argv[]){
         }
     }
 
-    // Apply the simple blur filter
-    blurFilter(image, input.height(), input.width());
-    pixelate(image, input.height(), input.width(), 3);
+    // Either pixelate, or blur. Not both
+    if(blur){
 
-#ifdef debug
-    // Just for testing, apply the filter 10 times
-    for(int i=0;i<10;i++){
-        blurFilter(image, input.height(), input.width());
-        pixelate(image, input.height(), input.width(), 3*(i+1));
+        // Blur for as many steps as indicated
+        for(int i=0;i<steps;i++){
+            blurFilter(image, input.height(), input.width());
+        }
+    }else{
+
+        // Pixelate for as many steps as indicated
+        for(int i=0;i<steps;i++){
+            pixelate(image, input.height(), input.width(), BLOCKMIN*(i+1));
+        }
     }
-#endif
 
     // Save the image information appropriately for output
     CImg<double> output(input.width(), input.height(), input.depth(), input.spectrum(), 0);
